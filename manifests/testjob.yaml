@@ -4,22 +4,23 @@ metadata:
   name: openfoam-testjob
 spec:
   slotsPerWorker: 1
+  sshAuthMountPath: /home/mpiuser/.ssh
   cleanPodPolicy: Running
   mpiReplicaSpecs:
     Launcher:
       replicas: 1
       template:
-         spec:
-           containers:
-           - image: quay.io/openshiftdemos/kubeflow-mpi-openfoam:latest
-             name: foam-container
-             command:
-             - mpirun
-             - --allow-run-as-root
-             - -np
-             - "2"
-             - icoFoam
-             - -parallel
+        spec:
+          containers:
+          - image: quay.io/openshiftdemos/kubeflow-mpi-openfoam:latest
+            name: foam-container
+            command:
+            - mpirun
+            - --allow-run-as-root
+            - -np
+            - "2"
+            - icoFoam
+            - -parallel
     Worker:
       replicas: 2
       template:
@@ -27,3 +28,9 @@ spec:
           containers:
           - image: quay.io/openshiftdemos/kubeflow-mpi-openfoam:latest
             name: foam-worker
+            command:
+            - /usr/sbin/sshd
+            args:
+            - -De
+            - -f
+            - /home/mpiuser/.sshd_config
