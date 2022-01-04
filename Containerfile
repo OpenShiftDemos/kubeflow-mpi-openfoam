@@ -25,7 +25,7 @@ RUN sed -i "s/[ #]\(.*StrictHostKeyChecking \).*/ \1no/g" /etc/ssh/ssh_config \
     && sed -i "s/#\(StrictModes \).*/\1no/g" /etc/ssh/sshd_config \
     && sed -i "s/#\(Port \).*/\1$port/g" /etc/ssh/sshd_config
 
-RUN useradd -m mpiuser
+RUN useradd -m mpiuser -g 0 && chmod 775 /home/mpiuser
 WORKDIR /home/mpiuser
 # Configurations for running sshd as non-root.
 COPY --chown=mpiuser sshd_config .sshd_config
