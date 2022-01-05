@@ -25,11 +25,14 @@ RUN sed -i "s/[ #]\(.*StrictHostKeyChecking \).*/ \1no/g" /etc/ssh/ssh_config \
     && sed -i "s/#\(StrictModes \).*/\1no/g" /etc/ssh/sshd_config \
     && sed -i "s/#\(Port \).*/\1$port/g" /etc/ssh/sshd_config
 
-RUN useradd -m mpiuser -g 0 && chmod 775 /home/mpiuser
-WORKDIR /home/mpiuser
+#RUN useradd -m mpiuser -g 0 && chmod 775 /home/mpiuser
+#RUN usermod -g 0 openfoam && chmod 775 /home/openfoam
+WORKDIR /home/openfoam
 # Configurations for running sshd as non-root.
-COPY --chown=mpiuser sshd_config .sshd_config
-RUN echo "Port $port" >> /home/mpiuser/.sshd_config
+COPY --chown=openfoam sshd_config .sshd_config
+RUN echo "Port $port" >> /home/openfoam/.sshd_config
 
 RUN echo "    UserKnownHostsFile /dev/null" >> /etc/ssh/ssh_config && \
     sed -i 's/#\(StrictModes \).*/\1no/g' /etc/ssh/sshd_config
+
+USER openfoam

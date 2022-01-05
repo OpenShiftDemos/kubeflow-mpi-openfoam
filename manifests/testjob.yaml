@@ -4,7 +4,7 @@ metadata:
   name: openfoam-testjob
 spec:
   slotsPerWorker: 1
-  sshAuthMountPath: /home/mpiuser/.ssh
+  sshAuthMountPath: /home/openfoam/.ssh
   cleanPodPolicy: Running
   mpiReplicaSpecs:
     Launcher:
@@ -16,6 +16,7 @@ spec:
             name: foam-container
             command:
             - mpirun
+            args:
             - --allow-run-as-root
             - -np
             - "2"
@@ -33,4 +34,4 @@ spec:
             args:
             - -De
             - -f
-            - /home/mpiuser/.sshd_config
+            - /home/openfoam/.sshd_config
