@@ -17,13 +17,14 @@ spec:
             command:
             - mpirun
             args:
-            - --allow-run-as-root
             - -np
-            - "2"
-            - icoFoam
+            - "4"
+            - interFoam
+            - -case
+            - /home/openfoam/storage/db
             - -parallel
     Worker:
-      replicas: 2
+      replicas: 4
       template:
         spec:
           containers:
@@ -35,3 +36,10 @@ spec:
             - -De
             - -f
             - /home/openfoam/.sshd_config
+            volumeMounts:
+            - mountPath: /home/openfoam/storage
+              name: storage
+          volumes:
+          - name: storage
+            persistentVolumeClaim:
+              claimName: foam-tutorials-claim

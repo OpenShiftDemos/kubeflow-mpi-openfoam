@@ -1,0 +1,20 @@
+# a pod to attach the PVC to test that it's working
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ft
+  labels:
+    app: ft
+spec:
+  containers:
+  - name: ft
+    command: ["sleep","999999"]
+    image: quay.io/openshiftdemos/kubeflow-mpi-openfoam:latest
+    volumeMounts:
+    - mountPath: /home/openfoam/storage
+      name: storage
+  volumes:
+  - name: storage
+    persistentVolumeClaim:
+      claimName: foam-tutorials-claim
