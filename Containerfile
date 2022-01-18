@@ -30,6 +30,7 @@ RUN sed -i "s/[ #]\(.*StrictHostKeyChecking \).*/ \1no/g" /etc/ssh/ssh_config \
 WORKDIR /home/openfoam
 # Configurations for running sshd as non-root.
 COPY --chown=openfoam sshd_config .sshd_config
+COPY --chown=openfoam bashrc .bashrc
 RUN echo "Port $port" >> /home/openfoam/.sshd_config
 
 RUN echo "    UserKnownHostsFile /dev/null" >> /etc/ssh/ssh_config && \
