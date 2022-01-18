@@ -1,0 +1,71 @@
+# PoC to get RWX inside your k8s cluster
+# for OCP you will need to grant privileged SCC access to the SA deploying the pod
+# inspired by: https://medium.com/@aronasorman/creating-an-filemanager-server-within-kubernetes-e6d4d542bbb9
+---
+apiVersion: apps/v1             
+kind: Deployment   
+metadata:
+  name: filemanager
+  labels:
+    app: filemanager
+spec:                                         
+  replicas: 1                  
+  revisionHistoryLimit: 10                    
+  selector:                               
+    matchLabels:                                 
+      app: filemanager
+  strategy:                     
+    rollingUpdate:     
+      maxSurge: 25%     
+      maxUnavailable: 25%                                                                                                                                                                                                                     
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: filemanager
+    spec:
+      containers:
+      - name: filemanager
+        image: quay.io/openshiftdemos/tinyfilemanager-php-ubi:latest
+        args:
+        - /opt/stuff
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - mountPath: /opt/app-root/src/storage
+          name: storage
+      volumes:
+      - name: storage
+        persistentVolumeClaim:
+          claimName: foam-tutorials-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: filemanager
+  labels:
+    app: filemanager
+spec:
+  type: ClusterIP
+  selector:
+    app: filemanager
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      name: http
+---
+apiVersion: route.openshift.io/v1                                                                                      
+kind: Route            
+metadata:
+  name: filemanager
+  labels:
+    app: filemanager
+spec:
+  port:
+    targetPort: http
+  to:
+    kind: Service
+    name: filemanager
+    weight: 100
+  wildcardPolicy: None
