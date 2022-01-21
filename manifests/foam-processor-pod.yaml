@@ -3,17 +3,23 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: ft
+  name: foam-processor
   labels:
-    app: ft
+    app: foam-processor
 spec:
   containers:
-  - name: ft
-    command: ["sleep","999999"]
+  - name: openfoam
+    command: ["sleep","infinity"]
     image: quay.io/openshiftdemos/kubeflow-mpi-openfoam:latest
     volumeMounts:
     - mountPath: /home/openfoam/storage
       name: storage
+    resources:
+      limits:
+        cpu: "1"
+        memory: "1Gi"
+      requests:
+        cpu: "1"
   volumes:
   - name: storage
     persistentVolumeClaim:

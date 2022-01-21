@@ -1,7 +1,7 @@
 apiVersion: kubeflow.org/v1alpha2
 kind: MPIJob
 metadata:
-  name: openfoam-testjob
+  name: openfoam-dambreak-example
 spec:
   slotsPerWorker: 1
   sshAuthMountPath: /home/openfoam/.ssh
@@ -21,8 +21,15 @@ spec:
             - "4"
             - interFoam
             - -case
-            - /home/openfoam/storage/db
+            - /home/openfoam/storage/damBreak
             - -parallel
+            resources:
+              limits:
+                cpu: "1"
+                memory: "1Gi"
+              requests:
+                cpu: "1"
+                memory: "1Gi"
     Worker:
       replicas: 4
       template:
@@ -39,6 +46,13 @@ spec:
             volumeMounts:
             - mountPath: /home/openfoam/storage
               name: storage
+            resources:
+              limits:
+                cpu: "1"
+                memory: "4Gi"
+              requests:
+                cpu: "1"
+                memory: "4Gi"
           volumes:
           - name: storage
             persistentVolumeClaim:

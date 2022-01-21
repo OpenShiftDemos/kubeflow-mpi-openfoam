@@ -34,6 +34,12 @@ spec:
         volumeMounts:
         - mountPath: /opt/app-root/src/storage
           name: storage
+        resources:
+          limits:
+            cpu: "512m"
+            memory: "1Gi"
+          requests:
+            cpu: "512m"
       volumes:
       - name: storage
         persistentVolumeClaim:
