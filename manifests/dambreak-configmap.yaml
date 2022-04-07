@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dambreak-job
+data:
+  damBreak.sh: |
+    #!/bin/bash
+    echo "STARTING"
+    date
+    START="$(date +%s)"
+    source /opt/openfoam9/etc/bashrc
+    cd /home/openfoam/storage/damBreak
+    set -x
+    blockMesh
+    setFields
+    decomposePar -force
+    mpirun -np 4 interFoam -case /home/openfoam/storage/damBreak -parallel
+    reconstructPar
+    set +x
+    date
+    echo "ENDED"
+    DURATION=$[ $(date +%s) - ${START} ]
+    echo ${DURATION}

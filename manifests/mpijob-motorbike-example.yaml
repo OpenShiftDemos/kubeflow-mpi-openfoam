@@ -1,7 +1,7 @@
 apiVersion: kubeflow.org/v1alpha2
 kind: MPIJob
 metadata:
-  name: openfoam-dambreak-example
+  name: openfoam-motorbike-example
 spec:
   slotsPerWorker: 2
   sshAuthMountPath: /home/openfoam/.ssh
@@ -17,14 +17,14 @@ spec:
             command:
             - /bin/bash
             args:
-            - /home/openfoam/scripts/damBreak.sh
+            - /home/openfoam/scripts/motorBike.sh
             resources:
               limits:
                 cpu: "1"
-                memory: "1Gi"
+                memory: "4Gi"
               requests:
                 cpu: "1"
-                memory: "1Gi"
+                memory: "4Gi"
             volumeMounts:
             - mountPath: /home/openfoam/storage
               name: storage
@@ -37,12 +37,12 @@ spec:
               claimName: foam-tutorials-claim
           - name: scripts
             configMap:
-              name: dambreak-job
+              name: motorbike-job
               items:
-              - key: "damBreak.sh"
-                path: "damBreak.sh"
+              - key: "motorBike.sh"
+                path: "motorBike.sh"
     Worker:
-      replicas: 2
+      replicas: 6
       template:
         spec:
           containers:

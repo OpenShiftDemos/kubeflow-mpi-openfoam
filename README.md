@@ -95,6 +95,22 @@ ODF operator is currently provisioning all of the resources it needs to be able
 to provide a CephFS cluster on top of the `gp2` storage volumes (which
 themselves are on top of AWS EC2 EBS).
 
+### Cluster Autoscaling
+Whether or not you want to auto-scale your cluster is up to you. It is trivial
+in most Kubernetes environments to add additional nodes to your cluster to
+support your desired workload. The big example at the end of this tutorial will
+consume 512 cores across many pods. You will need sufficient nodes in your
+cluster to accommodate the cores you want to run.
+
+In OpenShift you use a `ClusterAutoscaler` that enables auto scaling at the
+cluster level, and then you create `MachineAutoScaler`s for the `MachineSet`s
+you want to enable scaling. For more details on autoscaling OpenShift clusters,
+check [the
+documentation](https://docs.openshift.com/container-platform/4.9/machine_management/applying-autoscaling.html).
+
+As the configuration of autoscaling involves some details that are highly
+specific to your deployed cluster, sample YAML files are not included.
+
 ### Kubeflow MPI Operator
 The Kubeflow MPI Operator needs to be installed. The installation process also
 creates a `CustomResourceDefinition` for an `mpijob` object, which is how you
@@ -176,7 +192,7 @@ manager outside the cluster. Check the URL for the Route. Note that HTTPS is
 _not_ enabled for this route. The effective URL to use is (make sure to check
 your own base FQDN):
 
-    http://filemanager-cfd.apps.cluster-fr5bx.fr5bx.sandbox1255.opentlc.com/tinyfilemanager.php
+    http://filemanager-cfd.apps.mpi.ocp4testing.openshiftdemos.com/tinyfilemanager.php
 
 The default username and password for Tiny File Manager is used:
 
@@ -189,76 +205,31 @@ The default username and password for Tiny File Manager is used:
   
 That's it!
 
-### OpenFOAM MPI Worker Container Image
+### OpenFOAM MPI Launcher/Worker Container Image
 Podman was used locally to build the OpenFOAM container image to go with the MPI
 operator. You can find its `Containerfile` and supporting files in this
 repository. The image is also currently being hosted on Quay.io:
 [https://quay.io/repository/openshiftdemos/kubeflow-mpi-openfoam](https://quay.io/repository/openshiftdemos/kubeflow-mpi-openfoam)
 
+The MPI operator uses a concept of a Launcher pod (which is where `mpirun`
+originates) and Worker pods, which are the targets of the `mpirun` command.
+There is no reason that both the Launcher and the Worker cannot be the same
+container image. This tutorial uses the same container image for both.
+
 OpenFOAM's CFD analysis process involves several steps. You can actually perform
-some of the pre-processing steps inside a running container using `rsh` or
-`exec`. First, deploy a Pod based on the OpenFOAM image that simply sleeps and
-does nothing. This pod will also mount the same PersistentVolumeClaim so that it
-can access the `damBreak` example.
+some of the pre- and post-processing steps inside a running container using
+`rsh` or `exec`. However, you can also include the steps in your pre- and
+post-processing in a script, and then mount that script into the Launcher pod
+and make that script be the entry execution point of the Launcher. We have
+staged precisely that scenario for you in the subsequent steps.
 
-    oc create -f manifests/foam-processor-pod.yaml -n cfd
+### OpenFOAM MPI Script ConfigMap
+An easy way to mount files into a container in Kubernetes is using a
+`ConfigMap`. The sequence of steps in performing the _damBreak_ MPI job is
+contained in a bash script in the `dambreak-configmap.yaml` file. Go ahead and
+create this `ConfigMap`:
 
-Wait for the Pod to get running and then:
-
-    oc rsh -n cfd foam-processor
-
-You will get an `sh` prompt, at which point you want to run:
-
-    $ bash
-
-You should see something like:
-
-    openfoam@foam-processor:~$
-
-OpenFOAM includes a large quantity of `bash` functions, variables, paths,
-libraries, and etc. It's important to start a `bash` session in order to pull
-those things in. If you wanted to do the above two-step process in one step, you
-could have done:
-
-    oc exec -n cfd -it foam-processor -- bash
-
-If you look at the directory structure inside the pod:
-
-    ls -al
-
-You will see something like the following:
-
-    total 16
-    drwxr-xr-x. 1 openfoam openfoam   21 Jan 21 16:47 .
-    drwxr-xr-x. 1 root     root       22 Dec 16 12:51 ..
-    -rw-r--r--. 1 openfoam openfoam  220 Feb 25  2020 .bash_logout
-    -rw-r--r--. 1 openfoam openfoam 3804 Jan 17 19:38 .bashrc
-    -rw-r--r--. 1 openfoam openfoam  807 Feb 25  2020 .profile
-    -rw-r--r--. 1 openfoam openfoam   92 Jan 17 19:39 .sshd_config
-    drwxrwxrwx. 3 root     root        1 Jan 21 16:35 storage
-
-The `storage` folder is present, and if you do:
-
-    ls -al storage/damBreak
-
-You will see all the CFD assets. 
-
-Go ahead and change directory:
-
-    cd storage/damBreak
-
-Then, run each of the following commands in this exact order exactly as
-specified:
-
-    blockMesh
-    setFields
-    decomposePar
-
-The above sequence has broken up the CFD job into component parts that can be
-run across 4 processors.
-
-Go ahead and `exit` from your `bash` and/or `sh` shells back to your local
-command prompt.
+    oc create -f manifests/dambreak-configmap.yaml -n cfd
 
 ### OpenFOAM MPI Job
 At this point you are ready to run your OpenFOAM MPI job. Take a look at the
@@ -302,5 +273,87 @@ Time = 0.11616
 
 It's working!
 
-With four processors on an m5a.4xlarge instance type, this job takes
-approximately 650-750 seconds.
+With four processors on an m5a.4xlarge instance type, this job takes 800 seconds
+or less depending on how fast your cluster is able to fetch the container
+images, and other factors.
+
+An example picture from OpenShift's metrics dashboard shows the project in action:
+
+![dambreak metrics view](images/dambreak-metrics.png)
+
+## Slots per Worker
+In our example we used a replica count of 2 on the Workers, but specified `-np
+4` for `mpirun`. How does this work? In the MPI job we have specified
+`slotsPerWorker: 2` which causes the MPI operator to configure the MPI `hosts`
+file to specify that each worker has 2 _slots_, or processors. The MPI job
+further includes a limit/request for 2 CPUs for each Worker pod. If you were to
+`rsh` or `exec sh` into one of the worker pods and execute `top`, you would see
+that two cores are being used:
+
+```
+...
+    152 openfoam  20   0  312992  98708  80856 R  96.7   0.2   3:09.63 interFoam                                                                                                                                                              
+    151 openfoam  20   0  313084  98752  80780 R  96.3   0.2   3:08.58 interFoam      
+...
+```
+
+Depending on the nature of your environment, you may wish to run more
+`slotsPerWorker` in order to reduce the total number of Pods that get scheduled
+by the MPI operator. There are varying support limits for the number of
+pods-per-node depending on your Kuberetes distribution. OpenShift currently
+supports 250 pods per node and this is the default limit. If you were running
+your environment directly on very large hardware with a huge number of cores,
+having `slotsPerWorker: 1` could result in attempting to schedule too many pods
+on your nodes and the resulting MPI job would fail.
+
+Also, attempting to schedule very large numbers of pods simultaneously can
+result in system instability. On the flip side, trying to fit larger Pods that
+require more cores can also be challenging if your MPI job is running in an
+otherwise busy Kubernetes cluster. Lastly, each Pod is making a connection to
+the storage system, which results in higher throughput (on the network) and more
+disk access. Too many Pods will eventually decrease performance as the storage
+subsystem starts to become a limiting factor. Finding a good balance of slots
+versus Pod size versus total Pods will be dependent on your environment.
+
+## Other Examples
+There are two other examples and corresponding manifests included in this
+repository.
+
+### Motorbike
+The motorbike example is included with the OpenFoam project, just like the dam
+break example.
+
+![motorbike streamlines from cfd.direct](images/motorbike-streamlines-750x450.png)
+
+It is configured for 12 total processors with 2 slots per worker and 6 pods. It
+took about 8 minutes in our environment, and you can also see the dam break job
+that took place right before it:
+
+![motorbike metrics](images/motorbike-metrics.png)
+
+### Morlind Engineering Wing
+[Morlind Engineering](http://morlindengineering.com/) was kind enough to lend us
+a model and some other relevant OpenFOAM files for one of their race car
+airfoils:
+
+![Morlind Engineering wing](images/SectionY00_Pres.jpeg)
+
+There are example manifests included for this job as well. While it is currently
+set up for 512 processors, with 2 slots per worker and 256 pods, this is not an
+optimal configuration. The job took about 5 hours in our example environment,
+which is not great compared to Morlind's own physical server cluster running
+OpenFOAM with only half the processors. This is likely due to storage
+throughput, poor subdivision of the job, and lots of small jobs.
+
+With some care and tweaking, you could easily find different Amazon instance
+types with faster storage, better CPUs, and different slots-per-worker and pod
+count configurations that would dramatically improve performance.
+
+Using something much larger, such as an EC2 c6i.24xlarge compute-optimized
+instance, would likely offer better results. This instance type has 96 cores,
+and would allow you to run your job with 90+ slots-per-worker (leaving some
+headroom for OpenShift's node processes) across 3 pods / 3 nodes which would be
+a minimum of 270 cores.
+
+Additionally, OpenShift Data Foundations is running on non-storage-optimized
+hosts with basic GP2 storage. This likely also leaves room for improvement.

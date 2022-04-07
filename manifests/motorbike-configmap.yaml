@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: motorbike-job
+data:
+  motorBike.sh: |
+    #!/bin/bash
+    echo "STARTING"
+    date
+    source /opt/openfoam9/etc/bashrc
+    cd /home/openfoam/storage/motorBike
+    set -x
+    set -e
+    surfaceFeatures
+    blockMesh
+    decomposePar -copyZero -force
+    mpirun -np 12 snappyHexMesh -parallel -overwrite -case /home/openfoam/storage/motorBike
+    mpirun -np 12 patchSummary -parallel -case /home/openfoam/storage/motorBike
+    mpirun -np 12 potentialFoam -parallel -case /home/openfoam/storage/motorBike
+    mpirun -np 12 simpleFoam -parallel -case /home/openfoam/storage/motorBike
+    reconstructParMesh -constant
+    reconstructPar -latestTime
+    set +x
+    date
+    echo "ENDED"
+

@@ -1,0 +1,83 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  4.1                                   |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      omega;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#include        "include/initialConditions"
+
+dimensions      [0 0 -1 0 0 0 0];
+
+internalField   uniform $turbulentOmega;
+
+boundaryField
+{
+    //- Set patchGroups for constraint patches
+    #includeEtc "caseDicts/setConstraintTypes"
+
+    #include "include/fixedInlet"
+
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      $internalField;
+        value           $internalField;
+    }
+
+    lowerWall
+    {
+        type            omegaWallFunction;
+        value           $internalField;
+    }
+
+    body
+    {
+        type            omegaWallFunction;
+        value           $internalField;
+    }
+
+    FrWheel
+    {
+        type            omegaWallFunction;
+        value           $internalField;
+    }
+
+    RrWheel
+    {
+        type            omegaWallFunction;
+        value           $internalField;
+    }
+
+    wing
+    {
+        type            omegaWallFunction;
+        value           $internalField;
+    }
+
+    FrTire
+    {
+        type            omegaWallFunction;
+        value           $internalField;
+    }
+
+    RrTire
+    {
+        type            omegaWallFunction;
+        value           $internalField;
+    }
+
+    #include "include/frontBackUpperPatches"
+}
+
+
+// ************************************************************************* //
