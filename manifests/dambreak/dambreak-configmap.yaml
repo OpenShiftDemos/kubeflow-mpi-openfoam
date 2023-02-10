@@ -9,13 +9,14 @@ data:
     date
     START="$(date +%s)"
     source /opt/openfoam9/etc/bashrc
-    cd /home/openfoam/storage/damBreak
+    cd /home/openfoam/storage/examples/damBreak
     set -x
-    blockMesh
-    setFields
-    decomposePar -force
-    mpirun -np 4 interFoam -case /home/openfoam/storage/damBreak -parallel
-    reconstructPar
+    set -e
+    #blockMesh
+    #setFields
+    #decomposePar -force
+    mpirun -np 4 interFoam -case /home/openfoam/storage/examples/damBreak -parallel
+    #reconstructPar
     set +x
     date
     echo "ENDED"

@@ -1,4 +1,5 @@
 # PoC to get RWX inside your k8s cluster
+
 # for OCP you will need to grant privileged SCC access to the SA deploying the pod
 # inspired by: https://medium.com/@aronasorman/creating-an-filemanager-server-within-kubernetes-e6d4d542bbb9
 ---
