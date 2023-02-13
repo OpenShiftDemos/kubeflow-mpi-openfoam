@@ -83,9 +83,37 @@ spec:
       name: openshift-client
     params:
       - name: SCRIPT
-        value: oc create -f manifests/
+        value: oc create -f /workspace/manifest-dir/manifests/dambreak/mpijob-dambreak-example.yaml
       - name: VERSION
         value: latest
     workspaces:
       - name: manifest-dir
         workspace: dambreak-workspace
+  - name: wait-mpijob
+    runAfter:
+      - create-mpijob
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+    params:
+      - name: SCRIPT
+        value: oc wait --for=condition=succeeded --timeout=10m mpijob/openfoam-dambreak-example
+      - name: VERSION
+        value: latest
+    workspaces:
+      - name: manifest-dir
+        workspace: dambreak-workspace
+  - name: process-reconstruct
+    runAfter:
+      - wait-mpijob
+    taskRef:
+      name: openfoam-command-task
+      kind: Task
+    workspaces:
+    - name: source
+      workspace: dambreak-workspace
+    params:
+    - name: content-path
+      value: $(params.content-path)
+    - name: the-command
+      value: "reconstructPar"
