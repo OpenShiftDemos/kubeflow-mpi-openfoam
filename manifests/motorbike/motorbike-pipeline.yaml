@@ -1,0 +1,148 @@
+apiVersion: tekton.dev/v1beta1 
+kind: Pipeline 
+metadata:
+  name: motorbike-pipeline
+spec: 
+  workspaces: 
+  - name: motorbike-workspace
+  params:
+  - name: git-url
+    type: string
+    description: url of the git repo for the code of deployment
+    default: https://github.com/OpenShiftDemos/kubeflow-mpi-openfoam
+  - name: content-path
+    type: string
+    description: the path in the repo where the job content lives
+    default: /examples/motorBike
+  - name: git-revision
+    type: string
+    description: Revision to checkout. (branch, tag, sha, ref, etc...)
+    default: main
+  tasks: 
+  - name: fetch-repository
+    taskRef:
+      name: git-clone
+      kind: ClusterTask
+    workspaces:
+    - name: output
+      workspace: motorbike-workspace
+    params:
+    - name: url
+      value: $(params.git-url)
+    - name: deleteExisting
+      value: "true"
+    - name: revision
+      value: $(params.git-revision)
+  - name: process-surfacefeatures
+    taskRef:
+      name: openfoam-command-task
+      kind: Task
+    workspaces:
+    - name: source
+      workspace: motorbike-workspace
+    runAfter:
+    - fetch-repository
+    params:
+    - name: content-path
+      value: $(params.content-path)
+    - name: the-command
+      value: "surfaceFeatures"
+  - name: process-blockmesh
+    taskRef:
+      name: openfoam-command-task
+      kind: Task
+    workspaces:
+    - name: source
+      workspace: motorbike-workspace
+    runAfter:
+    - process-surfacefeatures
+    params:
+    - name: content-path
+      value: $(params.content-path)
+    - name: the-command
+      value: "blockMesh"
+#  - name: process-setfields
+#    taskRef:
+#      name: openfoam-command-task
+#      kind: Task
+#    workspaces:
+#    - name: source
+#      workspace: motorbike-workspace
+#    runAfter:
+#    - process-blockmesh
+#    params:
+#    - name: content-path
+#      value: $(params.content-path)
+#    - name: the-command
+#      value: "setFields"
+  - name: process-decomposepar
+    taskRef:
+      name: openfoam-command-task
+      kind: Task
+    workspaces:
+    - name: source
+      workspace: motorbike-workspace
+    runAfter:
+    - process-blockmesh
+    params:
+    - name: content-path
+      value: $(params.content-path)
+    - name: the-command
+      value: "decomposePar -copyZero -force"
+  - name: mpijob-hexmesh
+    runAfter:
+      - process-decomposepar
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+    params:
+      - name: SCRIPT
+        value: oc create -f /workspace/manifest-dir/manifests/motorbike/mpijob-motorbike-hexmesh-example.yaml
+      - name: VERSION
+        value: latest
+    workspaces:
+      - name: manifest-dir
+        workspace: motorbike-workspace
+  - name: set-mpijob-ownership
+    runAfter:
+      - mpijob-hexmesh
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+    params:
+      - name: SCRIPT
+        value: oc patch mpijob/openfoam-motorbike-hexmesh --type=merge -p '{"metadata":{"ownerReferences":[{"apiVersion":"tekton.dev/v1beta1","controller":true,"kind":"PipelineRun","name":"$(context.pipelineRun.name)","uid":"$(context.pipelineRun.uid)"}]}}'
+      - name: VERSION
+        value: latest
+    workspaces:
+      - name: manifest-dir
+        workspace: motorbike-workspace
+#  - name: wait-mpijob
+#    runAfter:
+#      - create-mpijob
+#    taskRef:
+#      kind: ClusterTask
+#      name: openshift-client
+#    params:
+#      - name: SCRIPT
+#        value: oc wait --for=condition=succeeded --timeout=10m mpijob/openfoam-motorbike-example
+#      - name: VERSION
+#        value: latest
+#    workspaces:
+#      - name: manifest-dir
+#        workspace: motorbike-workspace
+#  - name: process-reconstruct
+#    runAfter:
+#      - wait-mpijob
+#      - set-mpijob-ownership
+#    taskRef:
+#      name: openfoam-command-task
+#      kind: Task
+#    workspaces:
+#    - name: source
+#      workspace: motorbike-workspace
+#    params:
+#    - name: content-path
+#      value: $(params.content-path)
+#    - name: the-command
+#      value: "reconstructPar"
