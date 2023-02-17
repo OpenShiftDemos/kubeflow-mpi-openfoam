@@ -117,34 +117,49 @@ spec:
     workspaces:
       - name: manifest-dir
         workspace: motorbike-workspace
-#  - name: mpijob-patchsummary
-#    runAfter:
-#      - process-decomposepar
-#    taskRef:
-#      kind: ClusterTask
-#      name: openshift-client
-#    params:
-#      - name: SCRIPT
-#        value: oc create -f /workspace/manifest-dir/manifests/motorbike/mpijob-motorbike-patchsummary-example.yaml
-#      - name: VERSION
-#        value: latest
-#    workspaces:
-#      - name: manifest-dir
-#        workspace: motorbike-workspace
-#  - name: set-hexmesh-ownership
-#    runAfter:
-#      - mpijob-hexmesh
-#    taskRef:
-#      kind: ClusterTask
-#      name: openshift-client
-#    params:
-#      - name: SCRIPT
-#        value: oc patch mpijob/openfoam-motorbike-hexmesh --type=merge -p '{"metadata":{"ownerReferences":[{"apiVersion":"tekton.dev/v1beta1","controller":true,"kind":"PipelineRun","name":"$(context.pipelineRun.name)","uid":"$(context.pipelineRun.uid)"}]}}'
-#      - name: VERSION
-#        value: latest
-#    workspaces:
-#      - name: manifest-dir
-#        workspace: motorbike-workspace
+  - name: mpijob-patchsummary
+    runAfter:
+      - set-hexmesh-ownership
+      - wait-hexmesh
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+    params:
+      - name: SCRIPT
+        value: oc create -f /workspace/manifest-dir/manifests/motorbike/mpijob-motorbike-patchsummary-example.yaml
+      - name: VERSION
+        value: latest
+    workspaces:
+      - name: manifest-dir
+        workspace: motorbike-workspace
+  - name: set-patchsummary-ownership
+    runAfter:
+      - mpijob-patchsummary
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+    params:
+      - name: SCRIPT
+        value: oc patch mpijob/openfoam-motorbike-patchsummary --type=merge -p '{"metadata":{"ownerReferences":[{"apiVersion":"tekton.dev/v1beta1","controller":true,"kind":"PipelineRun","name":"$(context.pipelineRun.name)","uid":"$(context.pipelineRun.uid)"}]}}'
+      - name: VERSION
+        value: latest
+    workspaces:
+      - name: manifest-dir
+        workspace: motorbike-workspace
+  - name: wait-patchsummary
+    runAfter:
+      - mpijob-patchsummary
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+    params:
+      - name: SCRIPT
+        value: oc wait --for=condition=succeeded --timeout=10m mpijob/openfoam-motorbike-patchsummary
+      - name: VERSION
+        value: latest
+    workspaces:
+      - name: manifest-dir
+        workspace: motorbike-workspace
 #  - name: process-reconstruct
 #    runAfter:
 #      - wait-mpijob
