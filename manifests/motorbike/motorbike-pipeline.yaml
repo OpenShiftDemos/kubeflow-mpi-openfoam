@@ -160,6 +160,49 @@ spec:
     workspaces:
       - name: manifest-dir
         workspace: motorbike-workspace
+  - name: mpijob-potentialfoam
+    runAfter:
+      - set-patchsummary-ownership
+      - wait-patchsummary
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+    params:
+      - name: SCRIPT
+        value: oc create -f /workspace/manifest-dir/manifests/motorbike/mpijob-motorbike-potentialfoam-example.yaml
+      - name: VERSION
+        value: latest
+    workspaces:
+      - name: manifest-dir
+        workspace: motorbike-workspace
+  - name: set-potentialfoam-ownership
+    runAfter:
+      - mpijob-potentialfoam
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+    params:
+      - name: SCRIPT
+        value: oc patch mpijob/openfoam-motorbike-potentialfoam --type=merge -p '{"metadata":{"ownerReferences":[{"apiVersion":"tekton.dev/v1beta1","controller":true,"kind":"PipelineRun","name":"$(context.pipelineRun.name)","uid":"$(context.pipelineRun.uid)"}]}}'
+      - name: VERSION
+        value: latest
+    workspaces:
+      - name: manifest-dir
+        workspace: motorbike-workspace
+  - name: wait-potentialfoam
+    runAfter:
+      - mpijob-potentialfoam
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+    params:
+      - name: SCRIPT
+        value: oc wait --for=condition=succeeded --timeout=10m mpijob/openfoam-motorbike-potentialfoam
+      - name: VERSION
+        value: latest
+    workspaces:
+      - name: manifest-dir
+        workspace: motorbike-workspace
 #  - name: process-reconstruct
 #    runAfter:
 #      - wait-mpijob
