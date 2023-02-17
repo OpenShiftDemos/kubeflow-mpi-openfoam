@@ -1,0 +1,63 @@
+apiVersion: kubeflow.org/v1alpha2
+kind: MPIJob
+metadata:
+  name: openfoam-motorbike-simplefoam
+spec:
+  slotsPerWorker: 6
+  sshAuthMountPath: /home/openfoam/.ssh
+  runPolicy:
+    cleanPodPolicy: Running
+  mpiReplicaSpecs:
+    Launcher:
+      replicas: 1
+      template:
+        spec:
+          containers:
+          - image: quay.io/openshiftdemos/kubeflow-mpi-openfoam:latest
+            name: foam-container
+            command: ["/bin/bash", "-c"]
+            args:
+              - |-
+                source /opt/openfoam9/etc/bashrc
+                set -x
+                set -e
+                mpirun -np 12 simpleFoam -parallel -case /home/openfoam/storage/examples/motorBike
+            resources:
+              limits:
+                cpu: "1"
+                memory: "4Gi"
+              requests:
+                cpu: "1"
+                memory: "4Gi"
+            volumeMounts:
+            - mountPath: /home/openfoam/storage
+              name: storage
+          volumes:
+          - name: storage
+            persistentVolumeClaim:
+              claimName: foam-tutorials-claim
+    Worker:
+      replicas: 2
+      template:
+        spec:
+          containers:
+          - image: quay.io/openshiftdemos/kubeflow-mpi-openfoam:latest
+            name: foam-worker
+            command:
+            - /usr/sbin/sshd
+            args:
+            - -De
+            - -f
+            - /home/openfoam/.sshd_config
+            volumeMounts:
+            - mountPath: /home/openfoam/storage
+              name: storage
+            resources:
+              limits:
+                cpu: "6"
+              requests:
+                cpu: "6"
+          volumes:
+          - name: storage
+            persistentVolumeClaim:
+              claimName: foam-tutorials-claim
