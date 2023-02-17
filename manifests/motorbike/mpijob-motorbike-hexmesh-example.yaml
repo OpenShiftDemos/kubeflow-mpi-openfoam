@@ -20,7 +20,7 @@ spec:
                 source /opt/openfoam9/etc/bashrc
                 set -x
                 set -e
-                mpirun -np 12 snappyHexMesh -parallel -overwrite -case /home/openfoam/storage/motorBike
+                mpirun -np 12 snappyHexMesh -parallel -overwrite -case /home/openfoam/storage/examples/motorBike
             resources:
               limits:
                 cpu: "1"
