@@ -1,11 +1,12 @@
-apiVersion: kubeflow.org/v1alpha2
+apiVersion: kubeflow.org/v1
 kind: MPIJob
 metadata:
   name: openfoam-dambreak-example
 spec:
   slotsPerWorker: 2
   sshAuthMountPath: /home/openfoam/.ssh
-  cleanPodPolicy: Running
+  runPolicy:
+    cleanPodPolicy: Running
   mpiReplicaSpecs:
     Launcher:
       replicas: 1
