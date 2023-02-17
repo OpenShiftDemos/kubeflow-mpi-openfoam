@@ -61,20 +61,6 @@ spec:
       value: $(params.content-path)
     - name: the-command
       value: "blockMesh"
-#  - name: process-setfields
-#    taskRef:
-#      name: openfoam-command-task
-#      kind: Task
-#    workspaces:
-#    - name: source
-#      workspace: motorbike-workspace
-#    runAfter:
-#    - process-blockmesh
-#    params:
-#    - name: content-path
-#      value: $(params.content-path)
-#    - name: the-command
-#      value: "setFields"
   - name: process-decomposepar
     taskRef:
       name: openfoam-command-task
@@ -103,7 +89,7 @@ spec:
     workspaces:
       - name: manifest-dir
         workspace: motorbike-workspace
-  - name: set-mpijob-ownership
+  - name: set-hexmesh-ownership
     runAfter:
       - mpijob-hexmesh
     taskRef:
@@ -117,15 +103,43 @@ spec:
     workspaces:
       - name: manifest-dir
         workspace: motorbike-workspace
-#  - name: wait-mpijob
+  - name: wait-hexmesh
+    runAfter:
+      - mpijob-hexmesh
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+    params:
+      - name: SCRIPT
+        value: oc wait --for=condition=succeeded --timeout=10m mpijob/openfoam-motorbike-hexmesh
+      - name: VERSION
+        value: latest
+    workspaces:
+      - name: manifest-dir
+        workspace: motorbike-workspace
+#  - name: mpijob-patchsummary
 #    runAfter:
-#      - create-mpijob
+#      - process-decomposepar
 #    taskRef:
 #      kind: ClusterTask
 #      name: openshift-client
 #    params:
 #      - name: SCRIPT
-#        value: oc wait --for=condition=succeeded --timeout=10m mpijob/openfoam-motorbike-example
+#        value: oc create -f /workspace/manifest-dir/manifests/motorbike/mpijob-motorbike-patchsummary-example.yaml
+#      - name: VERSION
+#        value: latest
+#    workspaces:
+#      - name: manifest-dir
+#        workspace: motorbike-workspace
+#  - name: set-hexmesh-ownership
+#    runAfter:
+#      - mpijob-hexmesh
+#    taskRef:
+#      kind: ClusterTask
+#      name: openshift-client
+#    params:
+#      - name: SCRIPT
+#        value: oc patch mpijob/openfoam-motorbike-hexmesh --type=merge -p '{"metadata":{"ownerReferences":[{"apiVersion":"tekton.dev/v1beta1","controller":true,"kind":"PipelineRun","name":"$(context.pipelineRun.name)","uid":"$(context.pipelineRun.uid)"}]}}'
 #      - name: VERSION
 #        value: latest
 #    workspaces:
