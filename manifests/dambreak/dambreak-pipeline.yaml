@@ -89,6 +89,20 @@ spec:
     workspaces:
       - name: manifest-dir
         workspace: dambreak-workspace
+  - name: set-mpijob-ownership
+    runAfter:
+      - create-mpijob
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+    params:
+      - name: SCRIPT
+        value: oc patch mpijob/openfoam-dambreak-example --type=merge -p '{"metadata":{"ownerReferences":[{"apiVersion":"tekton.dev/v1beta1","controller":true,"kind":"PipelineRun","name":"$(context.pipelineRun.name)","uid":"$(context.pipelineRun.uid)"}]}}'
+      - name: VERSION
+        value: latest
+    workspaces:
+      - name: manifest-dir
+        workspace: dambreak-workspace
   - name: wait-mpijob
     runAfter:
       - create-mpijob
@@ -106,6 +120,7 @@ spec:
   - name: process-reconstruct
     runAfter:
       - wait-mpijob
+      - set-mpijob-ownership
     taskRef:
       name: openfoam-command-task
       kind: Task

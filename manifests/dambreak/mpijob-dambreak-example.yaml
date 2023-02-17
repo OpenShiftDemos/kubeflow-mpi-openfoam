@@ -14,10 +14,13 @@ spec:
           containers:
           - image: quay.io/openshiftdemos/kubeflow-mpi-openfoam:latest
             name: foam-container
-            command:
-            - /bin/bash
+            command: ["/bin/bash", "-c"]
             args:
-            - /home/openfoam/scripts/damBreak.sh
+              - |-
+                source /opt/openfoam9/etc/bashrc
+                set -x
+                set -e
+                mpirun -np 4 interFoam -case /home/openfoam/storage/examples/damBreak -parallel
             resources:
               limits:
                 cpu: "1"
@@ -28,19 +31,10 @@ spec:
             volumeMounts:
             - mountPath: /home/openfoam/storage
               name: storage
-            - name: scripts
-              mountPath: "/home/openfoam/scripts"
-              readOnly: true
           volumes:
           - name: storage
             persistentVolumeClaim:
               claimName: foam-tutorials-claim
-          - name: scripts
-            configMap:
-              name: dambreak-job
-              items:
-              - key: "damBreak.sh"
-                path: "damBreak.sh"
     Worker:
       replicas: 2
       template:

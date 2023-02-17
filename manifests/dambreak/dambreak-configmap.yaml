@@ -12,11 +12,7 @@ data:
     cd /home/openfoam/storage/examples/damBreak
     set -x
     set -e
-    #blockMesh
-    #setFields
-    #decomposePar -force
     mpirun -np 4 interFoam -case /home/openfoam/storage/examples/damBreak -parallel
-    #reconstructPar
     set +x
     date
     echo "ENDED"
