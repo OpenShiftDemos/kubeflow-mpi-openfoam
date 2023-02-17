@@ -5,7 +5,8 @@ metadata:
 spec:
   slotsPerWorker: 6
   sshAuthMountPath: /home/openfoam/.ssh
-  cleanPodPolicy: All
+  runPolicy:
+    cleanPodPolicy: Running
   mpiReplicaSpecs:
     Launcher:
       replicas: 1
