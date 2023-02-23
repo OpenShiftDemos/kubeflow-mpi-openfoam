@@ -12,8 +12,6 @@ spec:
       replicas: 1
       template:
         spec:
-          securityContext:
-            runAsGroup: 1000700000
           containers:
           - image: quay.io/openshiftdemos/kubeflow-mpi-openfoam:latest
             name: foam-container
@@ -42,8 +40,6 @@ spec:
       replicas: 2
       template:
         spec:
-          securityContext:
-            runAsGroup: 1000700000
           containers:
           - image: quay.io/openshiftdemos/kubeflow-mpi-openfoam:latest
             name: foam-worker

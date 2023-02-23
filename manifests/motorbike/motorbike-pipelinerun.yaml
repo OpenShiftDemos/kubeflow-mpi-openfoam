@@ -5,6 +5,9 @@ metadata:
     tekton.dev/pipeline: motorbike-pipeline
   generateName: motorbike-pipeline-
 spec:
+  podTemplate:
+    securityContext:
+      runAsUser: 98765
   params:
   - name: git-url
     value: https://github.com/OpenShiftDemos/kubeflow-mpi-openfoam
