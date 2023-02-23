@@ -13,8 +13,6 @@ spec:
   steps:
   - name: process
     image: quay.io/openshiftdemos/kubeflow-mpi-openfoam:latest
-    securityContext:
-      runAsGroup: 1000700000
     workingDir: "/workspace/source/$(params.content-path)"
     command: ["/bin/bash", "-c"]
     args:
