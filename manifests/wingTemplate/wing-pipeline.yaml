@@ -1,0 +1,148 @@
+apiVersion: tekton.dev/v1beta1 
+kind: Pipeline 
+metadata:
+  name: wing-pipeline
+spec: 
+  workspaces: 
+  - name: wing-workspace
+  params:
+  - name: git-url
+    type: string
+    description: url of the git repo for the code of deployment
+    default: https://github.com/OpenShiftDemos/kubeflow-mpi-openfoam
+  - name: content-path
+    type: string
+    description: the path in the repo where the job content lives
+    default: /examples/wingTemplate
+  - name: git-revision
+    type: string
+    description: Revision to checkout. (branch, tag, sha, ref, etc...)
+    default: main
+  tasks: 
+  - name: fetch-repository
+    taskRef:
+      name: git-clone
+      kind: ClusterTask
+    workspaces:
+    - name: output
+      workspace: wing-workspace
+    params:
+    - name: url
+      value: $(params.git-url)
+    - name: deleteExisting
+      value: "true"
+    - name: revision
+      value: $(params.git-revision)
+  - name: process-surfaceconvert
+    taskRef:
+      name: openfoam-command-task
+      kind: Task
+    workspaces:
+    - name: source
+      workspace: wing-workspace
+    runAfter:
+    - fetch-repository
+    params:
+    - name: content-path
+      value: $(params.content-path)
+    - name: the-command
+      value: "surfaceConvert ./constant/Input/wing.stl ./constant/triSurface/wing.stl -clean -scale 0.0254"
+  - name: process-surfacefeatures
+    taskRef:
+      name: openfoam-command-task
+      kind: Task
+    workspaces:
+    - name: source
+      workspace: wing-workspace
+    runAfter:
+    - process-surfaceconvert
+    params:
+    - name: content-path
+      value: $(params.content-path)
+    - name: the-command
+      value: "surfaceFeatures"
+  - name: process-blockmesh
+    taskRef:
+      name: openfoam-command-task
+      kind: Task
+    workspaces:
+    - name: source
+      workspace: wing-workspace
+    runAfter:
+    - process-surfacefeatures
+    params:
+    - name: content-path
+      value: $(params.content-path)
+    - name: the-command
+      value: "blockMesh"
+  - name: process-decomposepar
+    taskRef:
+      name: openfoam-command-task
+      kind: Task
+    workspaces:
+    - name: source
+      workspace: wing-workspace
+    runAfter:
+    - process-blockmesh
+    params:
+    - name: content-path
+      value: $(params.content-path)
+    - name: the-command
+      value: "decomposePar -copyZero -force"
+  - name: mpijob-hexmesh
+    runAfter:
+      - process-decomposepar
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+    params:
+      - name: SCRIPT
+        value: oc create -f /workspace/manifest-dir/manifests/wingTemplate/mpijob-wing-hexmesh-example.yaml
+      - name: VERSION
+        value: latest
+    workspaces:
+      - name: manifest-dir
+        workspace: wing-workspace
+#  - name: set-mpijob-ownership
+#    runAfter:
+#      - create-mpijob
+#    taskRef:
+#      kind: ClusterTask
+#      name: openshift-client
+#    params:
+#      - name: SCRIPT
+#        value: oc patch mpijob/openfoam-wing-example --type=merge -p '{"metadata":{"ownerReferences":[{"apiVersion":"tekton.dev/v1beta1","controller":true,"kind":"PipelineRun","name":"$(context.pipelineRun.name)","uid":"$(context.pipelineRun.uid)"}]}}'
+#      - name: VERSION
+#        value: latest
+#    workspaces:
+#      - name: manifest-dir
+#        workspace: wing-workspace
+#  - name: wait-mpijob
+#    runAfter:
+#      - create-mpijob
+#    taskRef:
+#      kind: ClusterTask
+#      name: openshift-client
+#    params:
+#      - name: SCRIPT
+#        value: oc wait --for=condition=succeeded --timeout=10m mpijob/openfoam-wing-example
+#      - name: VERSION
+#        value: latest
+#    workspaces:
+#      - name: manifest-dir
+#        workspace: wing-workspace
+#  - name: process-reconstruct
+#    runAfter:
+#      - wait-mpijob
+#      - set-mpijob-ownership
+#    taskRef:
+#      name: openfoam-command-task
+#      kind: Task
+#    workspaces:
+#    - name: source
+#      workspace: wing-workspace
+#    params:
+#    - name: content-path
+#      value: $(params.content-path)
+#    - name: the-command
+#      value: "reconstructPar"

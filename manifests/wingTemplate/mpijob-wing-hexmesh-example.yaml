@@ -1,0 +1,73 @@
+apiVersion: kubeflow.org/v1alpha2
+kind: MPIJob
+metadata:
+  name: openfoam-wing-hexmesh-example
+spec:
+  slotsPerWorker: 2
+  sshAuthMountPath: /home/openfoam/.ssh
+  cleanPodPolicy: Running
+  mpiReplicaSpecs:
+    Launcher:
+      replicas: 1
+      template:
+        spec:
+          containers:
+          - image: quay.io/openshiftdemos/kubeflow-mpi-openfoam:latest
+            name: foam-container
+            command: ["/bin/bash", "-c"]
+            args:
+              - |-
+                source /opt/openfoam9/etc/bashrc
+                set -x
+                set -e
+                mpirun -np 512 -mca orte_base_help_aggregate 0 snappyHexMesh -overwrite -parallel -case /home/openfoam/storage/wingTemplate
+            resources:
+              limits:
+                cpu: "1"
+                memory: "4Gi"
+              requests:
+                cpu: "1"
+                memory: "4Gi"
+            volumeMounts:
+            - mountPath: /home/openfoam/storage
+              name: storage
+            - name: scripts
+              mountPath: "/home/openfoam/scripts"
+              readOnly: true
+          volumes:
+          - name: storage
+            persistentVolumeClaim:
+              claimName: foam-tutorials-claim
+          - name: scripts
+            configMap:
+              name: wing-job
+              items:
+              - key: "wing.sh"
+                path: "wing.sh"
+    Worker:
+      replicas: 256
+      template:
+        spec:
+          nodeSelector:
+            purpose: hpc
+          containers:
+          - image: quay.io/openshiftdemos/kubeflow-mpi-openfoam:latest
+            name: foam-worker
+            command:
+            - /usr/sbin/sshd
+            args:
+            - -De
+            - -f
+            - /home/openfoam/.sshd_config
+            volumeMounts:
+            - mountPath: /home/openfoam/storage
+              name: storage
+            resources:
+              limits:
+                cpu: "2"
+              requests:
+                cpu: "2"
+          volumes:
+          - name: storage
+            persistentVolumeClaim:
+              claimName: foam-tutorials-claim

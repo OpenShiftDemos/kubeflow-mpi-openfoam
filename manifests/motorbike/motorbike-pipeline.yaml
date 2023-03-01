@@ -246,18 +246,32 @@ spec:
     workspaces:
       - name: manifest-dir
         workspace: motorbike-workspace
-#  - name: process-reconstruct
-#    runAfter:
-#      - wait-mpijob
-#      - set-mpijob-ownership
-#    taskRef:
-#      name: openfoam-command-task
-#      kind: Task
-#    workspaces:
-#    - name: source
-#      workspace: motorbike-workspace
-#    params:
-#    - name: content-path
-#      value: $(params.content-path)
-#    - name: the-command
-#      value: "reconstructPar"
+  - name: process-reconstruct-parmesh
+    runAfter:
+      - wait-simplefoam
+      - set-simplefoam-ownership
+    taskRef:
+      name: openfoam-command-task
+      kind: Task
+    workspaces:
+    - name: source
+      workspace: motorbike-workspace
+    params:
+    - name: content-path
+      value: $(params.content-path)
+    - name: the-command
+      value: "reconstructParMesh -constant"
+  - name: process-reconstruct-par
+    runAfter:
+      - process-reconstruct-parmesh
+    taskRef:
+      name: openfoam-command-task
+      kind: Task
+    workspaces:
+    - name: source
+      workspace: motorbike-workspace
+    params:
+    - name: content-path
+      value: $(params.content-path)
+    - name: the-command
+      value: "reconstructPar -latestTime"
