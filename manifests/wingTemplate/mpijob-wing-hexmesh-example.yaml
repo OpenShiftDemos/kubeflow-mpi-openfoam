@@ -1,3 +1,4 @@
+apiVersion: kubeflow.org/v1alpha2
 kind: MPIJob
 metadata:
   name: openfoam-wing-hexmesh-example
