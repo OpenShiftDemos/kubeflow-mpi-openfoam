@@ -103,34 +103,28 @@ spec:
     workspaces:
       - name: manifest-dir
         workspace: wing-workspace
-#  - name: set-mpijob-ownership
-#    runAfter:
-#      - create-mpijob
-#    taskRef:
-#      kind: ClusterTask
-#      name: openshift-client
-#    params:
-#      - name: SCRIPT
-#        value: oc patch mpijob/openfoam-wing-example --type=merge -p '{"metadata":{"ownerReferences":[{"apiVersion":"tekton.dev/v1beta1","controller":true,"kind":"PipelineRun","name":"$(context.pipelineRun.name)","uid":"$(context.pipelineRun.uid)"}]}}'
-#      - name: VERSION
-#        value: latest
-#    workspaces:
-#      - name: manifest-dir
-#        workspace: wing-workspace
-#  - name: wait-mpijob
-#    runAfter:
-#      - create-mpijob
-#    taskRef:
-#      kind: ClusterTask
-#      name: openshift-client
-#    params:
-#      - name: SCRIPT
-#        value: oc wait --for=condition=succeeded --timeout=10m mpijob/openfoam-wing-example
-#      - name: VERSION
-#        value: latest
-#    workspaces:
-#      - name: manifest-dir
-#        workspace: wing-workspace
+  - name: set-mpijob-ownership
+    runAfter:
+      - create-mpijob
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+    params:
+      - name: SCRIPT
+        value: oc patch mpijob/openfoam-wing-hexmesh-example --type=merge -p '{"metadata":{"ownerReferences":[{"apiVersion":"tekton.dev/v1beta1","controller":true,"kind":"PipelineRun","name":"$(context.pipelineRun.name)","uid":"$(context.pipelineRun.uid)"}]}}'
+      - name: VERSION
+        value: latest
+  - name: wait-mpijob
+    runAfter:
+      - create-mpijob
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+    params:
+      - name: SCRIPT
+        value: oc wait --for=condition=succeeded --timeout=120m mpijob/openfoam-wing-hexmesh-example
+      - name: VERSION
+        value: latest
 #  - name: process-reconstruct
 #    runAfter:
 #      - wait-mpijob

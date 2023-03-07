@@ -3,7 +3,7 @@ kind: MPIJob
 metadata:
   name: openfoam-wing-hexmesh-example
 spec:
-  slotsPerWorker: 2
+  slotsPerWorker: 94
   sshAuthMountPath: /home/openfoam/.ssh
   cleanPodPolicy: Running
   mpiReplicaSpecs:
@@ -31,23 +31,20 @@ spec:
             volumeMounts:
             - mountPath: /home/openfoam/storage
               name: storage
-            - name: scripts
-              mountPath: "/home/openfoam/scripts"
-              readOnly: true
           volumes:
           - name: storage
             persistentVolumeClaim:
               claimName: foam-tutorials-claim
-          - name: scripts
-            configMap:
-              name: wing-job
-              items:
-              - key: "wing.sh"
-                path: "wing.sh"
     Worker:
-      replicas: 256
+      replicas: 1
       template:
         spec:
+          tolerations:
+          - key: "hpc"
+            operator: "Equal"
+            value: "hpc"
+            effect: "NoSchedule"
+            tolerationSeconds: 3600
           nodeSelector:
             purpose: hpc
           containers:
@@ -64,9 +61,9 @@ spec:
               name: storage
             resources:
               limits:
-                cpu: "2"
+                cpu: "94"
               requests:
-                cpu: "2"
+                cpu: "94"
           volumes:
           - name: storage
             persistentVolumeClaim:
