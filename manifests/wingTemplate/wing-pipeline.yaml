@@ -103,9 +103,9 @@ spec:
     workspaces:
       - name: manifest-dir
         workspace: wing-workspace
-  - name: set-mpijob-ownership
+  - name: set-hexmesh-ownership
     runAfter:
-      - create-mpijob
+      - mpijob-hexmesh
     taskRef:
       kind: ClusterTask
       name: openshift-client
@@ -114,9 +114,10 @@ spec:
         value: oc patch mpijob/openfoam-wing-hexmesh-example --type=merge -p '{"metadata":{"ownerReferences":[{"apiVersion":"tekton.dev/v1beta1","controller":true,"kind":"PipelineRun","name":"$(context.pipelineRun.name)","uid":"$(context.pipelineRun.uid)"}]}}'
       - name: VERSION
         value: latest
-  - name: wait-mpijob
+  - name: wait-hexmesh
     runAfter:
-      - create-mpijob
+      - mpijob-hexmesh
+      - set-hexmesh-ownership
     taskRef:
       kind: ClusterTask
       name: openshift-client

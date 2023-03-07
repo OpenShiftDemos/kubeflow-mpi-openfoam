@@ -1,4 +1,3 @@
-apiVersion: kubeflow.org/v1alpha2
 kind: MPIJob
 metadata:
   name: openfoam-wing-hexmesh-example
@@ -44,7 +43,6 @@ spec:
             operator: "Equal"
             value: "hpc"
             effect: "NoSchedule"
-            tolerationSeconds: 3600
           nodeSelector:
             purpose: hpc
           containers:

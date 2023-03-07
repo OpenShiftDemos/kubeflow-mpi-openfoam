@@ -18,7 +18,7 @@ spec:
   pipelineRef:
     name: wing-pipeline
   serviceAccountName: pipeline
-  timeout: 1h0m0s
+  timeout: 10h0m0s
   workspaces:
   - name: wing-workspace
     persistentVolumeClaim:
