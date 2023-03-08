@@ -20,7 +20,7 @@ spec:
                 source /opt/openfoam9/etc/bashrc
                 set -x
                 set -e
-                mpirun -np 256 -mca orte_base_help_aggregate 0 snappyHexMesh -overwrite -parallel -case /home/openfoam/storage/wingTemplate
+                mpirun -np 256 -mca orte_base_help_aggregate 0 snappyHexMesh -overwrite -parallel -case /home/openfoam/storage/examples/wingTemplate
             resources:
               limits:
                 cpu: "1"
