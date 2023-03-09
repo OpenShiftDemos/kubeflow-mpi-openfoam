@@ -25,14 +25,38 @@ spec:
                 surfaceFeatures
                 blockMesh
                 decomposePar -copyZero -force
+                echo ">>>>>>>>>>>>>>>>> snappyHexMesh <<<<<<<<<<<<<<<<<"
+                echo
+                echo
                 mpirun -np 240 -mca orte_base_help_aggregate 0 snappyHexMesh -overwrite -parallel
-                #mpirun -np 240 renumberMesh -overwrite -parallel
-                #mpirun -np 240 checkMesh -parallel
-                #mpirun -np 240 splitMeshRegions -largestOnly -overwrite
-                #mpirun -np 240 checkMesh
-                #mpirun -np 240 patchSummary -parallel
-                #mpirun -np 240 potentialFoam -parallel
-                #mpirun -np 240 simpleFoam -parallel
+                echo ">>>>>>>>>>>>>>>>> renumbermesh <<<<<<<<<<<<<<<<<"
+                echo
+                echo
+                mpirun -np 240 renumberMesh -overwrite -parallel
+                echo ">>>>>>>>>>>>>>>>> checkmesh <<<<<<<<<<<<<<<<<"
+                echo
+                echo
+                mpirun -np 240 checkMesh -parallel
+                echo ">>>>>>>>>>>>>>>>> splitmeshregions <<<<<<<<<<<<<<<<<"
+                echo
+                echo
+                mpirun -np 240 splitMeshRegions -largestOnly -overwrite
+                echo ">>>>>>>>>>>>>>>>> checkmesh 2 <<<<<<<<<<<<<<<<<"
+                echo
+                echo
+                mpirun -np 240 checkMesh
+                echo ">>>>>>>>>>>>>>>>> patchsummary <<<<<<<<<<<<<<<<<"
+                echo
+                echo
+                mpirun -np 240 patchSummary -parallel
+                echo ">>>>>>>>>>>>>>>>> potentialfoam <<<<<<<<<<<<<<<<<"
+                echo
+                echo
+                mpirun -np 240 potentialFoam -parallel
+                echo ">>>>>>>>>>>>>>>>> simplefoam <<<<<<<<<<<<<<<<<"
+                echo
+                echo
+                mpirun -np 240 simpleFoam -parallel
             resources:
               limits:
                 cpu: "1"
