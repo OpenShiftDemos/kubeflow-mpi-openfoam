@@ -8,6 +8,7 @@ spec:
   podTemplate:
     securityContext:
       runAsUser: 98765
+      fsGroup: 98765
   params:
   - name: git-url
     value: https://github.com/OpenShiftDemos/kubeflow-mpi-openfoam
