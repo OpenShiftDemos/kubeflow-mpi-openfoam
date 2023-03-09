@@ -89,7 +89,8 @@ spec:
       value: $(params.content-path)
     - name: the-command
       value: "decomposePar -copyZero -force"
-  - name: mpijob-hexmesh
+
+  - name: mpijob-wing
     runAfter:
       - process-decomposepar
     taskRef:
@@ -97,32 +98,32 @@ spec:
       name: openshift-client
     params:
       - name: SCRIPT
-        value: oc create -f /workspace/manifest-dir/manifests/wingTemplate/mpijob-wing-hexmesh-example.yaml
+        value: oc create -f /workspace/manifest-dir/manifests/wingTemplate/mpijob-wing-example.yaml
       - name: VERSION
         value: latest
     workspaces:
       - name: manifest-dir
         workspace: wing-workspace
-  - name: set-hexmesh-ownership
+  - name: set-mpijob-ownership
     runAfter:
-      - mpijob-hexmesh
+      - mpijob-wing
     taskRef:
       kind: ClusterTask
       name: openshift-client
     params:
       - name: SCRIPT
-        value: oc patch mpijob/openfoam-wing-hexmesh-example --type=merge -p '{"metadata":{"ownerReferences":[{"apiVersion":"tekton.dev/v1beta1","controller":true,"kind":"PipelineRun","name":"$(context.pipelineRun.name)","uid":"$(context.pipelineRun.uid)"}]}}'
+        value: oc patch mpijob/openfoam-wing-example --type=merge -p '{"metadata":{"ownerReferences":[{"apiVersion":"tekton.dev/v1beta1","controller":true,"kind":"PipelineRun","name":"$(context.pipelineRun.name)","uid":"$(context.pipelineRun.uid)"}]}}'
       - name: VERSION
         value: latest
-  - name: wait-hexmesh
+  - name: wait-mpijob
     runAfter:
-      - mpijob-hexmesh
-      - set-hexmesh-ownership
+      - mpijob-wing
+      - set-mpijob-ownership
     taskRef:
       kind: ClusterTask
       name: openshift-client
     params:
       - name: SCRIPT
-        value: oc wait --for=condition=succeeded --timeout=120m mpijob/openfoam-wing-hexmesh-example
+        value: oc wait --for=condition=succeeded --timeout=120m mpijob/openfoam-wing-example
       - name: VERSION
         value: latest
