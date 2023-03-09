@@ -22,17 +22,17 @@ spec:
                 set -e
                 cd ./storage/examples/wingTemplate
                 surfaceConvert ./constant/Input/wing.stl ./constant/triSurface/wing.stl -clean -scale 0.0254
-                surfaceFeatures
+                surfaceFeatureExtract
                 blockMesh
                 decomposePar -copyZero -force
-                mpirun -np 240 -mca orte_base_help_aggregate 0 snappyHexMesh -overwrite -parallel -case /home/openfoam/storage/examples/wingTemplate
-                mpirun -np 240 renumberMesh -overwrite -parallel -case /home/openfoam/storage/examples/wingTemplate
-                mpirun -np 240 checkMesh -parallel -case /home/openfoam/storage/examples/wingTemplate
-                mpirun -np 240 splitMeshRegions -largestOnly -overwrite -case /home/openfoam/storage/examples/wingTemplate
-                mpirun -np 240 checkMesh -case /home/openfoam/storage/examples/wingTemplate
-                mpirun -np 240 patchSummary -parallel -case /home/openfoam/storage/examples/wingTemplate
-                mpirun -np 240 potentialFoam -parallel -case /home/openfoam/storage/examples/wingTemplate
-                mpirun -np 240 simpleFoam -parallel -case /home/openfoam/storage/examples/wingTemplate
+                mpirun -np 240 -mca orte_base_help_aggregate 0 snappyHexMesh -overwrite -parallel
+                mpirun -np 240 renumberMesh -overwrite -parallel
+                mpirun -np 240 checkMesh -parallel
+                mpirun -np 240 splitMeshRegions -largestOnly -overwrite
+                mpirun -np 240 checkMesh
+                mpirun -np 240 patchSummary -parallel
+                mpirun -np 240 potentialFoam -parallel
+                mpirun -np 240 simpleFoam -parallel
             resources:
               limits:
                 cpu: "1"
