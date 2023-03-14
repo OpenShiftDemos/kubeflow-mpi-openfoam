@@ -1,11 +1,12 @@
 apiVersion: kubeflow.org/v1alpha2
 kind: MPIJob
 metadata:
-  name: openfoam-dambreak-example
+  name: openfoam-motorbike-hexmesh
 spec:
-  slotsPerWorker: 2
+  slotsPerWorker: 6
   sshAuthMountPath: /home/openfoam/.ssh
-  cleanPodPolicy: Running
+  runPolicy:
+    cleanPodPolicy: Running
   mpiReplicaSpecs:
     Launcher:
       replicas: 1
@@ -14,33 +15,27 @@ spec:
           containers:
           - image: quay.io/openshiftdemos/kubeflow-mpi-openfoam:latest
             name: foam-container
-            command:
-            - /bin/bash
+            command: ["/bin/bash", "-c"]
             args:
-            - /home/openfoam/scripts/damBreak.sh
+              - |-
+                source /opt/openfoam9/etc/bashrc
+                set -x
+                set -e
+                mpirun -np 12 snappyHexMesh -parallel -overwrite -case /home/openfoam/storage/examples/motorBike
             resources:
               limits:
                 cpu: "1"
-                memory: "1Gi"
+                memory: "4Gi"
               requests:
                 cpu: "1"
-                memory: "1Gi"
+                memory: "4Gi"
             volumeMounts:
             - mountPath: /home/openfoam/storage
               name: storage
-            - name: scripts
-              mountPath: "/home/openfoam/scripts"
-              readOnly: true
           volumes:
           - name: storage
             persistentVolumeClaim:
               claimName: foam-tutorials-claim
-          - name: scripts
-            configMap:
-              name: dambreak-job
-              items:
-              - key: "damBreak.sh"
-                path: "damBreak.sh"
     Worker:
       replicas: 2
       template:
@@ -59,9 +54,9 @@ spec:
               name: storage
             resources:
               limits:
-                cpu: "2"
+                cpu: "6"
               requests:
-                cpu: "2"
+                cpu: "6"
           volumes:
           - name: storage
             persistentVolumeClaim:

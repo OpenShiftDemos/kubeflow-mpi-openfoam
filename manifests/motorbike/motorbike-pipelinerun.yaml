@@ -1,0 +1,25 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  labels:
+    tekton.dev/pipeline: motorbike-pipeline
+  generateName: motorbike-pipeline-
+spec:
+  podTemplate:
+    securityContext:
+      runAsUser: 98765
+  params:
+  - name: git-url
+    value: https://github.com/OpenShiftDemos/kubeflow-mpi-openfoam
+  - name: content-path
+    value: /examples/motorBike
+  - name: git-revision
+    value: 4-12-tekton
+  pipelineRef:
+    name: motorbike-pipeline
+  serviceAccountName: pipeline
+  timeout: 1h0m0s
+  workspaces:
+  - name: motorbike-workspace
+    persistentVolumeClaim:
+      claimName: foam-tutorials-claim

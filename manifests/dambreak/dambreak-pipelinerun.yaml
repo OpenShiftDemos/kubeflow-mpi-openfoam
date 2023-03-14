@@ -1,0 +1,25 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  labels:
+    tekton.dev/pipeline: dambreak-pipeline
+  generateName: dambreak-pipeline-
+spec:
+  podTemplate:
+    securityContext:
+      runAsUser: 98765
+  params:
+  - name: git-url
+    value: https://github.com/OpenShiftDemos/kubeflow-mpi-openfoam
+  - name: content-path
+    value: /examples/damBreak
+  - name: git-revision
+    value: 4-12-tekton
+  pipelineRef:
+    name: dambreak-pipeline
+  serviceAccountName: pipeline
+  timeout: 1h0m0s
+  workspaces:
+  - name: dambreak-workspace
+    persistentVolumeClaim:
+      claimName: foam-tutorials-claim

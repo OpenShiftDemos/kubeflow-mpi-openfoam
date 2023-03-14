@@ -1,0 +1,134 @@
+apiVersion: tekton.dev/v1beta1 
+kind: Pipeline 
+metadata:
+  name: dambreak-pipeline
+spec: 
+  workspaces: 
+  - name: dambreak-workspace
+  params:
+  - name: git-url
+    type: string
+    description: url of the git repo for the code of deployment
+    default: https://github.com/OpenShiftDemos/kubeflow-mpi-openfoam
+  - name: content-path
+    type: string
+    description: the path in the repo where the job content lives
+    default: /examples/damBreak
+  - name: git-revision
+    type: string
+    description: Revision to checkout. (branch, tag, sha, ref, etc...)
+    default: main
+  tasks: 
+  - name: fetch-repository
+    taskRef:
+      name: git-clone
+      kind: ClusterTask
+    workspaces:
+    - name: output
+      workspace: dambreak-workspace
+    params:
+    - name: url
+      value: $(params.git-url)
+    - name: deleteExisting
+      value: "true"
+    - name: revision
+      value: $(params.git-revision)
+  - name: process-blockmesh
+    taskRef:
+      name: openfoam-command-task
+      kind: Task
+    workspaces:
+    - name: source
+      workspace: dambreak-workspace
+    runAfter:
+    - fetch-repository
+    params:
+    - name: content-path
+      value: $(params.content-path)
+    - name: the-command
+      value: "blockMesh"
+  - name: process-setfields
+    taskRef:
+      name: openfoam-command-task
+      kind: Task
+    workspaces:
+    - name: source
+      workspace: dambreak-workspace
+    runAfter:
+    - process-blockmesh
+    params:
+    - name: content-path
+      value: $(params.content-path)
+    - name: the-command
+      value: "setFields"
+  - name: process-decomposepar
+    taskRef:
+      name: openfoam-command-task
+      kind: Task
+    workspaces:
+    - name: source
+      workspace: dambreak-workspace
+    runAfter:
+    - process-setfields
+    params:
+    - name: content-path
+      value: $(params.content-path)
+    - name: the-command
+      value: "decomposePar -force"
+  - name: create-mpijob
+    runAfter:
+      - process-decomposepar
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+    params:
+      - name: SCRIPT
+        value: oc create -f /workspace/manifest-dir/manifests/dambreak/mpijob-dambreak-example.yaml
+      - name: VERSION
+        value: latest
+    workspaces:
+      - name: manifest-dir
+        workspace: dambreak-workspace
+  - name: set-mpijob-ownership
+    runAfter:
+      - create-mpijob
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+    params:
+      - name: SCRIPT
+        value: oc patch mpijob/openfoam-dambreak-example --type=merge -p '{"metadata":{"ownerReferences":[{"apiVersion":"tekton.dev/v1beta1","controller":true,"kind":"PipelineRun","name":"$(context.pipelineRun.name)","uid":"$(context.pipelineRun.uid)"}]}}'
+      - name: VERSION
+        value: latest
+    workspaces:
+      - name: manifest-dir
+        workspace: dambreak-workspace
+  - name: wait-mpijob
+    runAfter:
+      - create-mpijob
+    taskRef:
+      kind: ClusterTask
+      name: openshift-client
+    params:
+      - name: SCRIPT
+        value: oc wait --for=condition=succeeded --timeout=10m mpijob/openfoam-dambreak-example
+      - name: VERSION
+        value: latest
+    workspaces:
+      - name: manifest-dir
+        workspace: dambreak-workspace
+  - name: process-reconstruct
+    runAfter:
+      - wait-mpijob
+      - set-mpijob-ownership
+    taskRef:
+      name: openfoam-command-task
+      kind: Task
+    workspaces:
+    - name: source
+      workspace: dambreak-workspace
+    params:
+    - name: content-path
+      value: $(params.content-path)
+    - name: the-command
+      value: "reconstructPar"

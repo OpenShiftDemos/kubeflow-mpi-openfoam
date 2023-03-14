@@ -1,0 +1,23 @@
+apiVersion: tekton.dev/v1beta1 
+kind: Task 
+metadata:
+  name: openfoam-command-task
+spec: 
+  params:
+  - name: content-path
+    type: string
+  - name: the-command
+    type: string
+  workspaces:
+  - name: source
+  steps:
+  - name: process
+    image: quay.io/openshiftdemos/kubeflow-mpi-openfoam:latest
+    workingDir: "/workspace/source/$(params.content-path)"
+    command: ["/bin/bash", "-c"]
+    args:
+      - |-
+        source /opt/openfoam9/etc/bashrc
+        set -x
+        set -e
+        $(params.the-command)
