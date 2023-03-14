@@ -24,6 +24,9 @@ spec:
       labels:
         app: filemanager
     spec:
+      securityContext:
+        runAsUser: 98765
+        fsGroup: 98765
       containers:
       - name: filemanager
         image: quay.io/openshiftdemos/tinyfilemanager-php-ubi:latest

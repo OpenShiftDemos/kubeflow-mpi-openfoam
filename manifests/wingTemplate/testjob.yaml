@@ -21,42 +21,54 @@ spec:
                 set -x
                 set -e
                 cd ./storage/examples/wingTemplate
+                echo "Case Started" > case_history.txt 
+                date >> case_history.txt 
+                echo " *** " >> case_history.txt                
+
                 surfaceConvert ./constant/Input/wing.stl ./constant/triSurface/wing.stl -clean -scale 0.0254
+                echo "surfaceConvert complete" >> case_history.txt
+                echo " *** " >> case_history.txt
+
                 surfaceFeatures
+                echo "surfaceFeatures complete" >> case_history.txt
+                echo " *** " >> case_history.txt
+
                 blockMesh
+                echo "blockMesh complete" >> case_history.txt
+                echo " *** " >> case_history.txt
+
                 decomposePar -copyZero -force
-                echo ">>>>>>>>>>>>>>>>> snappyHexMesh <<<<<<<<<<<<<<<<<"
-                echo
-                echo
-                mpirun -np 240 -mca orte_base_help_aggregate 0 snappyHexMesh -overwrite -parallel
-                echo ">>>>>>>>>>>>>>>>> renumbermesh <<<<<<<<<<<<<<<<<"
-                echo
-                echo
-                mpirun -np 240 renumberMesh -overwrite -parallel
-                echo ">>>>>>>>>>>>>>>>> checkmesh <<<<<<<<<<<<<<<<<"
-                echo
-                echo
-                mpirun -np 240 checkMesh -parallel
-                echo ">>>>>>>>>>>>>>>>> splitmeshregions <<<<<<<<<<<<<<<<<"
-                echo
-                echo
-                mpirun -np 240 splitMeshRegions -largestOnly -overwrite
-                echo ">>>>>>>>>>>>>>>>> checkmesh 2 <<<<<<<<<<<<<<<<<"
-                echo
-                echo
-                mpirun -np 240 checkMesh
-                echo ">>>>>>>>>>>>>>>>> patchsummary <<<<<<<<<<<<<<<<<"
-                echo
-                echo
-                mpirun -np 240 patchSummary -parallel
-                echo ">>>>>>>>>>>>>>>>> potentialfoam <<<<<<<<<<<<<<<<<"
-                echo
-                echo
-                mpirun -np 240 potentialFoam -parallel
-                echo ">>>>>>>>>>>>>>>>> simplefoam <<<<<<<<<<<<<<<<<"
-                echo
-                echo
-                mpirun -np 240 simpleFoam -parallel
+                echo "decomposePar complete - starting snappyHexMesh" >> case_history.txt
+                
+                echo " *** " >> case_history.txt
+
+                mpirun -np 240 -mca orte_base_help_aggregate 0 snappyHexMesh -overwrite -parallel > log.snappyHexMesh
+
+                echo " snappyHexMesh details: " >> case_history.txt
+                tail -n 42 log.snappyHexMesh | head -n 40 >> case_history.txt
+                echo " *** " >> case_history.txt
+                echo " renumbering and checking" >> case_history.txt
+
+                mpirun -np 240 renumberMesh -overwrite -parallel > log.renumberMesh
+                mpirun -np 240 checkMesh -parallel >> log.checkMesh
+                echo " *** " >> case_history.txt 
+                echo "checkMesh results:" >> case_history.txt
+                echo "  " >> case_history.txt
+                
+                tail -n 21 log.checkMesh | head -n 19 >> case_history.txt
+                echo " *** " >> case_history.txt
+
+                mpirun -np 240 patchSummary -parallel > log.patchSummary
+                echo "patchSummary complete" >> case_history.txt
+                echo " *** " >> case_history.txt
+
+                mpirun -np 240 potentialFoam -parallel > log.potentialFoam
+                echo "potentialFoam complete" >> case_history.txt
+                echo " *** " >> case_history.txt
+
+                mpirun -np 240 simpleFoam -parallel > log.simpleFoam
+                echo "simpleFoam complete" >> case_history.txt
+                echo " *** " >> case_history.txt
             resources:
               limits:
                 cpu: "1"
