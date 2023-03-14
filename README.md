@@ -387,12 +387,14 @@ that took place right before it:
 
 Running this particular sequence of OpenFOAM commands as a pipeline actually
 took meaningfully longer than if all of the commands were executed by a single
-MPI job item. This has to do with scheduling, startup, and shutdown. While this
-pipeline took about 20 minutes, the single job version takes less than 10. 
+MPI job item. This has to do with scheduling, startup, and shutdown of the
+various pods associated with the pipeline. While this pipeline took about 20
+minutes, the non-pipelined job version takes less than 10. 
 
 For pipelines with a very large number of Tasks and a very short processing
 time, this difference may be very meaningful. However, for a job that has very
 long processing time for some steps, it may be less impactful.
+
 ### Morlind Engineering Wing
 [Morlind Engineering](http://morlindengineering.com/) was kind enough to lend us
 a model and some other relevant OpenFOAM files for one of their race car
@@ -400,22 +402,41 @@ airfoils:
 
 ![Morlind Engineering wing](images/SectionY00_Pres.jpeg)
 
-There are example manifests included for this job as well. While it is currently
-set up for 512 processors, with 2 slots per worker and 256 pods, this is not an
-optimal configuration. The job took about 5 hours in our example environment,
-which is not great compared to Morlind's own physical server cluster running
-OpenFOAM with only half the processors. This is likely due to storage
-throughput, poor subdivision of the job, and lots of small jobs.
+There are example manifests included for this job as well. However, in the
+interest of time (to conduct this experiment), the Morlind Wing example was not
+converted to use Tekton Pipelines. It still uses a single `MPIJob` and further
+simplifies things by eliminating the use of the `ConfigMap` to hold the script,
+instead putting the command sequence directly into the `MPIJob` definition,
+including logging redirection.
 
-With some care and tweaking, you could easily find different Amazon instance
-types with faster storage, better CPUs, and different slots-per-worker and pod
-count configurations that would dramatically improve performance.
+The job took about 5 hours in our example environment when using `c6i.24xlarge`
+instances, 94 slots per worker (close to the full core count of the instance
+type), pods with 94 CPUs, 3 worker replica pods (representing 282 total cores)
+and a job requesting 240 procs. This is a setup that is fairly similar to
+Morlind's in terms of physical (virtual) instance count, total number of cores,
+and etc. It also did not use any Tekton Pipelines which eliminates any
+start-up/spin-down time associated. This is roughly the same amount of
+processing time that the job took for [V1 of this
+experiment](https://github.com/OpenShiftDemos/kubeflow-mpi-openfoam/tree/v1.0.0)
+despite using compute-optimized instance types and very vew, very large pods. 
 
-Using something much larger, such as an EC2 c6i.24xlarge compute-optimized
-instance, would likely offer better results. This instance type has 96 cores,
-and would allow you to run your job with 90+ slots-per-worker (leaving some
-headroom for OpenShift's node processes) across 3 pods / 3 nodes which would be
-a minimum of 270 cores.
+It's unclear at this time why the performance of this workload is not on-par
+with Morlind's own lab despite using newer architecture processors on
+compute-optimized instances. Further investigation is required but is outside
+the scope of this experiment.
 
-Additionally, OpenShift Data Foundations is running on non-storage-optimized
-hosts with basic GP2 storage. This likely also leaves room for improvement.
+## Summary
+This experiment did not set out to prove that OpenShift running on AWS was the
+best and/or most performant environment to run your HPC workloads (specifically
+OpenFOAM). Rather, it set out to prove that in an organization that already has
+widely adopted Kubernetes there may be no need to to continue to maintain a
+separate/discrete HPC infrastructure, especially if that infrastructure lays
+dormant much of the time.
+
+Even if one were to assume that the reduced performance was simply the way
+things are, a serious consideration needs to be made when contemplating the
+total ownership and operational cost of an HPC cluster that lays dormant versus
+running those workloads on Kubernetes on-demand. Granted, cloud has its own cost
+associated with it, but this, too, is a key consideration when evaluating the
+cost-per-performance-unit of traditional HPC clusters versus Kubernetes-based
+HPC processing.

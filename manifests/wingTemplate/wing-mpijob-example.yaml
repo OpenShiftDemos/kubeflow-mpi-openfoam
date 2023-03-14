@@ -69,6 +69,8 @@ spec:
                 mpirun -np 240 simpleFoam -parallel > log.simpleFoam
                 echo "simpleFoam complete" >> case_history.txt
                 echo " *** " >> case_history.txt
+                echo "Case Completed" >> case_history.txt 
+                date >> case_history.txt 
             resources:
               limits:
                 cpu: "1"
