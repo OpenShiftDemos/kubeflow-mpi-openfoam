@@ -60,9 +60,6 @@ As of the creation of this example, ODF does not have any non-replicated mode
 and, as such, requires at least 3 OpenShift (Kubernetes) nodes to be able to be
 properly installed.
 
-The following subsections detail the steps to prepare to run the `damBreak`
-example.
-
 ### OpenShift
 OpenShift 4.12 was installed using the [Installer-Provisioned Infrastructure
 (IPI)](https://docs.openshift.com/container-platform/4.12/installing/installing_aws/installing-aws-default.html)
@@ -117,14 +114,14 @@ on top of AWS EC2 EBS).
 Whether or not you want to auto-scale your cluster is up to you. It is trivial
 in most Kubernetes environments to add additional nodes to your cluster to
 support your desired workload. The big example at the end of this tutorial will
-consume 512 cores across many pods. You will need sufficient nodes in your
+consume 240 cores across a few pods. You will need sufficient nodes in your
 cluster to accommodate the cores you want to run.
 
 In OpenShift you use a `ClusterAutoscaler` that enables auto scaling at the
 cluster level, and then you create `MachineAutoScaler`s for the `MachineSet`s
 you want to enable scaling. For more details on autoscaling OpenShift clusters,
 check [the
-documentation](https://docs.openshift.com/container-platform/4.9/machine_management/applying-autoscaling.html).
+documentation](https://docs.openshift.com/container-platform/4.12/machine_management/applying-autoscaling.html).
 
 As the configuration of autoscaling involves some details that are highly
 specific to your deployed cluster, sample YAML files are not included.
@@ -432,6 +429,10 @@ OpenFOAM). Rather, it set out to prove that in an organization that already has
 widely adopted Kubernetes there may be no need to to continue to maintain a
 separate/discrete HPC infrastructure, especially if that infrastructure lays
 dormant much of the time.
+
+It also did not set out to prove that Tekton Piplnes are the best way to handle
+the various pre, post, and processing steps of an HPC workload. It merely set
+out to show how it _could_ be done. 
 
 Even if one were to assume that the reduced performance was simply the way
 things are, a serious consideration needs to be made when contemplating the
